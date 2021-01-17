@@ -23,7 +23,8 @@ const COLOURS = {
     red:    '#D33F49',
     black:  '#2C2B2B',
     blue:   '#7180AC',
-    green:  '#15B097'
+    green:  '#15B097',
+    orange: '#FF9A4D'
 };
 
 const BLOCKS = {
@@ -31,7 +32,8 @@ const BLOCKS = {
     wall:   1,
     win:    2,
     ice:  3,
-    death:  4
+    death:  4,
+    bounce: 5
 };
 
 const LEVELS = {
@@ -228,7 +230,7 @@ const LEVELS = {
         spawnpoint: [400, 400],
         blocks: [
             [BLOCKS.wall, 0, 0, 40, 3000],
-            [BLOCKS.ice, 0, 800, 4000, 40],
+            [BLOCKS.bounce, 0, 800, 4000, 40],
             [BLOCKS.wall, 1200, 0, 40, 3000],
             [BLOCKS.wall, 0, 0, 4000, 40]
         ]
@@ -303,6 +305,8 @@ class Blob {
         this.isMovingDown = false;
 
         this.isFrozen = false;
+
+        this.hasJumped = false; // for downDash;
 
         this.isChargingJump = false;
         this.chargingJumpSpeed = 0;
@@ -401,9 +405,10 @@ class Blob {
     startMoveDown() {
         if (this.isMovingUp) this.stopMoveUp();
         this.isMovingDown = true;
+        this.hasJumped = false;
     }
     doMoveDown() {
-        if (this.isOnGround || this.isFrozen || this.usedDownDash) return;
+        if (this.isOnGround || this.isFrozen || this.usedDownDash || this.hasJumped) return;
 
         var speed = Math.max(this.moveDownSpeed, this.body.velocity.y * this.moveDownMultiplier);
 
@@ -455,6 +460,7 @@ class Blob {
 
         Matter.Body.setVelocity(this.body, {x:vel, y:-this.jumpSpeed});
         //this.isOnGround = false;
+        this.hasJumped = true
     }
 
     jumpLarge() {
@@ -465,6 +471,7 @@ class Blob {
         this.isChargingJump = false;
         this.chargingJumpSpeed = 0;
         this.isOnGround = false; // so jump() doesnt override this
+        this.hasJumped = true;
     }
 
 
@@ -477,12 +484,13 @@ class Blob {
 }
 
 class Game {
-    constructor(level, tickrate=50/3) {
+    constructor(level, scale = 1) {
         this.level = level;
-        this.tickrate = tickrate;
+        this.timeScale = scale;
+        this.tickrate = 50/3 * 1/scale;
     }
     start() {
-        this.engine = Matter.Engine.create();
+        this.engine = Matter.Engine.create({timing:{timeScale: this.timeScale}});
         this.render = Matter.Render.create({
             element: document.getElementById("maindiv"),
             engine: this.engine,
@@ -543,6 +551,17 @@ class Game {
                         fillStyle: COLOURS.red
                     }
                 }));
+            },
+            [BLOCKS.bounce]: block => {
+                var b = Matter.Bodies.rectangle(block[1], block[2], block[3], block[4], {
+                    isStatic: true,
+                    label: 'ground',
+                    render: {
+                        fillStyle: COLOURS.orange
+                    }
+                });
+                b.restitution = 1.2;
+                blocks.push(b);
             },
 			[BLOCKS.tutorial]: block =>{
 				blocks.push(Matter.Bodies.rectangle(block[1], block[2], block[3], block[4], {
@@ -631,7 +650,7 @@ class Game {
 
         document.addEventListener('keydown', this.handleKeyDownWrapper, false);
         document.addEventListener('keyup', this.handleKeyUpWrapper, false);
-        this.loopInterval = setInterval(function() {t.loop()}, this.tickrate);
+        this.loopInterval = setInterval(function() {t.loop()}, this.tickrate*1/this.timeScale);
 
         Matter.Events.on(this.engine, 'collisionEnd', e => {
             var pairs = e.pairs[0];
@@ -682,6 +701,8 @@ class Game {
             ) {
                 if (!this.blob.isOnGround) {
 
+                    this.blob.hasJumped = true;
+
                     this.blob.isOnGround = true;
 
                     var intensity = 3/(Math.abs(this.blob.body.velocity.y)+5)+0.3;
@@ -698,6 +719,8 @@ class Game {
                 (pairs.bodyB.label === 'blob' && pairs.bodyA.label === 'ice')
             ) {
                 if (!this.blob.isOnGround) {
+                    
+                    this.blob.hasJumped = true;
 
                     this.blob.isOnGround = true;
 
@@ -762,6 +785,11 @@ class Game {
     }
 
     loop() {
+        if (this.blob.body.position.x < -100 || this.blob.body.position.x > 1300 ||
+            this.blob.body.position.y < -100 || this.blob.body.position.y > 900) {
+            this.displayLoss();
+        }
+
         // Start walking animation if walking
         if (this.blob.isOnGround && (this.blob.isMovingLeft || this.blob.isMovingRight)) {
             if (!this.blob.checkIfAnimationActive()) {
@@ -837,7 +865,7 @@ class Game {
 		}
 
         this.ticksSinceStart++;
-        timerElem.innerHTML = formatTime(this.ticksSinceStart*this.tickrate);
+        timerElem.innerHTML = formatTime(this.ticksSinceStart*this.tickrate*this.timeScale);
     }
 
     displayLoss() {
@@ -848,7 +876,7 @@ class Game {
     displayWin() {
         this.blob.fixInPlace();
         document.getElementById('windiv').style.display = 'block';
-        document.getElementById('timer2').innerHTML = formatTime(this.ticksSinceStart*this.tickrate);
+        document.getElementById('timer2').innerHTML = formatTime(this.ticksSinceStart*this.tickrate*this.timeScale);
     }
 
     handleKeyDown(e) {
@@ -904,7 +932,7 @@ class Game {
 
 var game;
 
-function startGame(level) {
+function startGame(level, scale=1) {
     if (typeof game !== 'undefined') {
         game.stop();
         var button = document.getElementById("levelbutton" + game.level.toString());
@@ -912,7 +940,7 @@ function startGame(level) {
     }
     document.getElementById('windiv').style.display = 'none';
     document.getElementById('losediv').style.display = 'none';
-    game = new Game(level);
+    game = new Game(level, scale);
     game.start();
     var button = document.getElementById("levelbutton" + level.toString());
     button.className = "currentlevelbutton";
@@ -933,11 +961,6 @@ document.addEventListener('keydown', e => {
     pressingRestart = true;
     const lvl = game.level;
     startGame(lvl);
-}, false);
-document.addEventListener('keydown', e => {
-    if (e.keyCode != 78) return;
-    const lvl = game.level;
-    startGame(lvl+1);
 }, false);
 document.addEventListener('keyup', e => {
     if (e.keyCode == CONTROLS.restart) {
