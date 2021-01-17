@@ -193,20 +193,20 @@ const LEVELS = {
         ]
     },
     7: {
-        spawnpoint: [300, 250],
-        blocks: [
-            [BLOCKS.wall, 500, 150, 10, 700],
-            [BLOCKS.wall, 900, 150, 10, 400],
-            [BLOCKS.wall, 750, 5, 500, 10],
-            [BLOCKS.wall, 700, 500, 10, 700],
-            [BLOCKS.ground, 300, 350, 100, 10],
-            [BLOCKS.bounce, 300, 150, 380, 10],
-            [BLOCKS.death, 80, 200, 10, 50],
-            [BLOCKS.ground, 500, 600, 200, 10],
-            [BLOCKS.death, 900, 500, 300, 10],
-            [BLOCKS.bounce, 900, 650, 200, 10],
-            [BLOCKS.win, 750, 600, 40, 40],
-        ]
+	spawnpoint: [300, 250],
+	blocks: [
+	    [BLOCKS.wall, 500, 150, 10, 700],
+	    [BLOCKS.wall, 900, 150, 10, 400],
+	    [BLOCKS.wall, 750, 5, 500, 10],
+	    [BLOCKS.wall, 700, 450, 10, 700],
+	    [BLOCKS.ground, 300, 350, 100, 10],
+	    [BLOCKS.bounce, 300, 150, 380, 10],
+	    [BLOCKS.death, 80, 200, 10, 50],
+	    [BLOCKS.ground, 500, 600, 200, 10],
+	    [BLOCKS.death, 910, 500, 320, 10],
+	    [BLOCKS.bounce, 900, 650, 200, 10],
+	    [BLOCKS.win, 750, 600, 40, 40],
+	]
     },
     8: {
         spawnpoint: [155, 600],
