@@ -28,12 +28,13 @@ const COLOURS = {
 };
 
 const BLOCKS = {
-    ground: 0,
-    wall:   1,
-    win:    2,
-    ice:  3,
-    death:  4,
-    bounce: 5
+    ground:   0,
+    wall:     1,
+    win:      2,
+    ice:      3,
+    death:    4,
+    bounce:   5,
+    tutorial: 6,
 };
 
 const LEVELS = {
