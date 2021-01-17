@@ -190,6 +190,13 @@ const LEVELS = {
         ]
     },
     7: {
+        spawnpoint: [300, 300],
+        blocks: [
+            [BLOCKS.wall, 600, 200, 10, 600],
+            [BLOCKS.wall, 600, 200, 10, 600],
+        ]
+    },
+    8: {
         spawnpoint: [155, 600],
         blocks: [
             [BLOCKS.wall, 0, 0, 80, 2000],
@@ -208,7 +215,7 @@ const LEVELS = {
         ]
     },
 
-    8: {
+    9: {
         spawnpoint: [400, 400],
         blocks: [
             [BLOCKS.wall, 0, 0, 40, 3000],
@@ -223,12 +230,14 @@ const BLOB_HEIGHT = 98;
 const BLOB_WIDTH = 80;
 const BLOB_DEFAULT_SCALE = 0.7;
 
-var gameOver = Matter.Bodies.rectangle(450, 250, 500, 300, {isStatic:true, label:'gameOver', render:{fillStyle:COLOURS.red}});	
-gameOver.render.sprite.texture = "img/gameover.png";	
+var timerElem = document.getElementById('timer');
+
+//var gameOver = Matter.Bodies.rectangle(450, 250, 500, 300, {isStatic:true, label:'gameOver', render:{fillStyle:COLOURS.red}});	
+//gameOver.render.sprite.texture = "img/gameover.png";	
 
 
-var winGame = Matter.Bodies.rectangle(450, 250, 500, 300, {isStatic:true, label:'winGame', render:{fillStyle:COLOURS.red}});	
-winGame.render.sprite.texture = "img/youwon.png";
+//var winGame = Matter.Bodies.rectangle(450, 250, 500, 300, {isStatic:true, label:'winGame', render:{fillStyle:COLOURS.red}});	
+//winGame.render.sprite.texture = "img/youwon.png";
 
 function getCompScale(duration, frame, scaleTo) {
     // duration is how many frames the animation has
@@ -272,6 +281,7 @@ class Blob {
         this.jumpShortSpeed = 4;
         this.moveSpeed = 5;
         this.moveDownSpeed = 12;
+        this.moveDownMultiplier = 1.5;
         this.dashUpSpeed = 8;
         this.airMoveRate = 0.5;
 
@@ -385,7 +395,10 @@ class Blob {
     }
     doMoveDown() {
         if (this.isOnGround || this.isFrozen || this.usedDownDash) return;
-        Matter.Body.setVelocity(this.body, {y:this.moveDownSpeed, x:this.body.velocity.x});
+
+        var speed = Math.max(this.moveDownSpeed, this.body.velocity.y * this.moveDownMultiplier);
+
+        Matter.Body.setVelocity(this.body, {y: speed, x:this.body.velocity.x});
         this.usedDownDash = true;
     }
     stopMoveDown() {
@@ -455,8 +468,9 @@ class Blob {
 }
 
 class Game {
-    constructor(level) {
+    constructor(level, tickrate=50/3) {
         this.level = level;
+        this.tickrate = tickrate;
     }
     start() {
         this.engine = Matter.Engine.create();
@@ -608,7 +622,7 @@ class Game {
 
         document.addEventListener('keydown', this.handleKeyDownWrapper, false);
         document.addEventListener('keyup', this.handleKeyUpWrapper, false);
-        setInterval(function() {t.loop()}, 16.666666);
+        this.loopInterval = setInterval(function() {t.loop()}, this.tickrate);
 
         Matter.Events.on(this.engine, 'collisionEnd', e => {
             var pairs = e.pairs[0];
@@ -722,19 +736,20 @@ class Game {
 				//this.blob.body.render.sprite.texture = "img/sadblob.png";	
 				//this.blob.isLost = true;	
                 this.displayLoss();
-				window.now = new Date().getTime();
 			}	
             if (
                 (pairs.bodyA.label === 'blob' && pairs.bodyB.label === 'win') ||
                 (pairs.bodyB.label === 'win' && pairs.bodyA.label === 'blob')
             ) {
                 this.displayWin();
-				window.timer = true;
+				//window.timer = true;
 				//Matter.World.add(this.engine.world, [winGame]);	
 				//window.timer = true;	
 				//this.blob.isFrozen = true;	
 			}
         });
+
+        this.ticksSinceStart = 0;
     }
 
     loop() {
@@ -811,6 +826,9 @@ class Game {
 				Matter.Body.setVelocity(this.blob.body, {x:2.5*this.blob.body.velocity.x, y:2*this.blob.body.velocity.y});
 			this.blob.usedDash = true;
 		}
+
+        this.ticksSinceStart++;
+        timerElem.innerHTML = formatTime(this.ticksSinceStart*this.tickrate);
     }
 
     displayLoss() {
@@ -821,6 +839,7 @@ class Game {
     displayWin() {
         this.blob.fixInPlace();
         document.getElementById('windiv').style.display = 'block';
+        document.getElementById('timer2').innerHTML = formatTime(this.ticksSinceStart*this.tickrate);
     }
 
     handleKeyDown(e) {
@@ -841,7 +860,7 @@ class Game {
     }
 
     stop() {
-        clearInterval(this.loop);
+        clearInterval(this.loopInterval);
 
         document.removeEventListener('keydown', this.handleKeyDownWrapper, false);
         document.removeEventListener('keyup', this.handleKeyUpWrapper, false);
@@ -891,6 +910,13 @@ function startGame(level) {
     document.getElementById('wintext').innerHTML = 'Level ' + level.toString() + ' clear!';
     document.getElementById('losetext').innerHTML = 'Level ' + level.toString() + ' failed!';
 }
+function formatTime(ms) {
+  var format = "mm:ss:SS";
+  if (ms > 3600000) {
+    format = "HH:mm:ss:SS";
+  }
+  return moment().startOf('day').add(ms, 'milliseconds').format(format);
+}
 
 var pressingRestart = false;
 document.addEventListener('keydown', e => {
@@ -898,7 +924,6 @@ document.addEventListener('keydown', e => {
     pressingRestart = true;
     const lvl = game.level;
     startGame(lvl);
-	window.now = new Date().getTime();
 }, false);
 document.addEventListener('keyup', e => {
     if (e.keyCode == CONTROLS.restart) {
@@ -914,7 +939,7 @@ for (let i = 1; i <= levellength; ++i) {
     button.innerHTML = i.toString();
     button.id = "levelbutton" + i.toString();
     button.className = "levelbutton";
-    button.onclick = function() {startGame(i); window.timer = false;		window.now = new Date().getTime();};
+    button.onclick = function() {startGame(i);/* window.timer = false;		window.now = new Date().getTime();*/};
     leveldiv.appendChild(button);
 }
 
