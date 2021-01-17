@@ -897,6 +897,7 @@ document.addEventListener('keydown', e => {
     pressingRestart = true;
     const lvl = game.level;
     startGame(lvl);
+	window.now = new Date().getTime();
 }, false);
 document.addEventListener('keyup', e => {
     if (e.keyCode == CONTROLS.restart) {
