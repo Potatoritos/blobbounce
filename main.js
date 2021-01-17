@@ -30,7 +30,7 @@ const BLOCKS = {
     ground: 0,
     wall:   1,
     win:    2,
-    boost:  3,
+    ice:  3,
     death:  4
 };
 
@@ -189,7 +189,7 @@ const LEVELS = {
             [BLOCKS.wall, 1200, 800, 10, 4000],
         ]
     },
-    7: { // WIP
+    7: {
         spawnpoint: [155, 600],
         blocks: [
             [BLOCKS.wall, 0, 0, 80, 2000],
@@ -198,10 +198,11 @@ const LEVELS = {
             [BLOCKS.ground, 303, 320, 146, 40],
             [BLOCKS.ground, 40, 400, 40, 40],
             [BLOCKS.death, 510, 270, 220, 30],
+            [BLOCKS.death, 930, 270, 220, 30],
             [BLOCKS.death, 560, 100, 1000, 40],
             [BLOCKS.ground, 720, 320, 146, 40],
             [BLOCKS.death, 560, 100, 1000, 40],
-            [BLOCKS.win, 600, 500, 40, 40], 
+            [BLOCKS.win, 500, 500, 40, 40], 
             [BLOCKS.death, 1200, 500, 40, 1000], 
             [BLOCKS.death, 800, 800, 1000, 40],
         ]
@@ -211,7 +212,7 @@ const LEVELS = {
         spawnpoint: [400, 400],
         blocks: [
             [BLOCKS.wall, 0, 0, 40, 3000],
-            [BLOCKS.ground, 0, 800, 4000, 40],
+            [BLOCKS.ice, 0, 800, 4000, 40],
             [BLOCKS.wall, 1200, 0, 40, 3000],
             [BLOCKS.wall, 0, 0, 4000, 40]
         ]
@@ -255,7 +256,7 @@ function getXCompOffset(scale) { // does not work i think
 class Blob {
     constructor(spawnpoint) {
         this.body = Matter.Bodies.rectangle(spawnpoint[0], spawnpoint[1], 50, 50, {
-            mass: 100,
+            mass: 10,
             label: 'blob',
             inertia: 99999999999, // disable rotation (Infinity does not work)
             render: {
@@ -286,6 +287,9 @@ class Blob {
 
         this.isChargingJump = false;
         this.chargingJumpSpeed = 0;
+
+        this.isOnIce = false;
+        this.enteredIceSpeed = 0;
 
         this.usedDownDash = true;
         this.usedUpDash = true;
@@ -338,7 +342,7 @@ class Blob {
         this.body.render.sprite.texture = 'img/blob.png';
     }
     doMoveLeft() {
-        if (this.isFrozen) return;
+        if (this.isFrozen || this.isOnIce) return;
 
         if (this.isOnGround) {
             Matter.Body.setVelocity(this.body, {x:-this.moveSpeed,y:this.body.velocity.y});
@@ -360,9 +364,9 @@ class Blob {
         this.body.render.sprite.texture = 'img/blobflipped.png';
     }
     doMoveRight() {
-        if (this.isFrozen) return;
+        if (this.isFrozen || this.isOnIce) return;
         //Matter.Body.setVelocity(this.body, {x:Math.max(this.moveSpeed+0.0, this.body.velocity.x), y:this.body.velocity.y});
-        if (this.isOnGround) {
+        if (this.isOnGround && !this.isOnIce) {
             Matter.Body.setVelocity(this.body, {x:this.moveSpeed,y:this.body.velocity.y});
         } else {
             var speed = Math.min(this.body.velocity.x+this.airMoveRate, this.moveSpeed);
@@ -420,14 +424,21 @@ class Blob {
 
     jump() {
         if (!this.isOnGround || this.isFrozen) return;
-        
-        Matter.Body.setVelocity(this.body, {x:this.body.velocity.x, y:-this.jumpSpeed});
+
+        var vel = this.body.velocity.x;
+
+        if (this.isOnIce) {
+            vel *= 1.5;
+        }
+
+        Matter.Body.setVelocity(this.body, {x:vel, y:-this.jumpSpeed});
         //this.isOnGround = false;
     }
 
     jumpLarge() {
         if (!this.isOnGround || this.isFrozen || !this.isChargingJump) return;
         var speed = Math.min(-this.chargingJumpSpeed, -this.jumpSpeed);
+        speed *= Math.max((10 + this.boostTimer)/40, 1);
         Matter.Body.setVelocity(this.body, {x:this.body.velocity.x, y:speed});
         this.isChargingJump = false;
         this.chargingJumpSpeed = 0;
@@ -483,10 +494,10 @@ class Game {
                     }
                 })); 
             },
-            [BLOCKS.boost]: block => { // boost blocks have no functionality right now
+            [BLOCKS.ice]: block => { // boost blocks have no functionality right now
                 blocks.push(Matter.Bodies.rectangle(block[1], block[2], block[3], block[4], {
                     isStatic: true,
-                    label: 'boost',
+                    label: 'ice',
                     render: {
                         fillStyle: COLOURS.blue
                     }
@@ -620,6 +631,23 @@ class Game {
                     this.blob.isOnWall = false;
                 }
             }
+            
+            if (
+                (pairs.bodyA.label === 'blob' && pairs.bodyB.label === 'ice') ||
+                (pairs.bodyB.label === 'blob' && pairs.bodyA.label === 'ice')
+            ) {
+                if (this.blob.isOnGround) {
+                    this.blob.isOnGround = false;
+                }
+                this.blob.usedDownDash = false;
+                this.blob.usedUpDash = false;
+                if (this.blob.isOnIce) {
+                    this.blob.isOnIce = false;
+                    this.blob.isOnGround = false;
+                this.blob.body.friction = 0.1;
+                    this.blob.body.mass = 10;
+                }
+            }
         });
 		
 
@@ -640,6 +668,27 @@ class Game {
 
                     this.blob.playAnimation(25, 0.85, 25, intensity);
                 }
+            }
+
+            if (
+                (pairs.bodyA.label === 'blob' && pairs.bodyB.label === 'ice') ||
+                (pairs.bodyB.label === 'blob' && pairs.bodyA.label === 'ice')
+            ) {
+                if (!this.blob.isOnGround) {
+
+                    this.blob.isOnGround = true;
+
+                    var intensity = 3/(Math.abs(this.blob.body.velocity.y)+5)+0.3;
+
+                    this.blob.boostTimer = 0;
+                    this.blob.chargingJumpSpeed = this.blob.body.velocity.y;
+
+                    this.blob.playAnimation(25, 0.85, 25, intensity);
+                }
+                this.enteredIceSpeed = this.blob.body.velocity.x;
+                this.blob.body.mass = 10000000;
+                this.blob.body.friction = 0;
+                this.blob.isOnIce = true;
             }
 
 			this.blob.isBounce = true;
@@ -737,6 +786,10 @@ class Game {
 		
         if (this.blob.isMovingRight) {
             this.blob.doMoveRight();
+        }
+
+        if (this.blob.isOnIce) {
+            Matter.Body.setVelocity(this.blob.body, {x:this.enteredIceSpeed,y:this.blob.body.velocity.y});
         }
         
 		if(this.blob.isMovingDown){
@@ -844,7 +897,6 @@ document.addEventListener('keydown', e => {
     pressingRestart = true;
     const lvl = game.level;
     startGame(lvl);
-	window.now = new Date().getTime();
 }, false);
 document.addEventListener('keyup', e => {
     if (e.keyCode == CONTROLS.restart) {
