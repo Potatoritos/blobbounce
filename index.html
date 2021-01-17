@@ -115,56 +115,56 @@
             <h1 id="losetext">Level failed!</h1>
             <p>Press q to restart</p>
         </div>
-		<div id="infodiv" class="center">
-			<h1 id="wintext" style="margin:0; margin-top:20px;">Zoom out to play!</h1>
-			<h6 style="margin: 0">(So you don't see the scroll)</h6>
-			<h5 style="margin: 0">(Click to hide this banner)</h5>
-		</div>
+		<!--<div id="infodiv" class="center">-->
+			<!--<h1 id="wintext" style="margin:0; margin-top:20px;">Zoom out to play!</h1>-->
+			<!--<h6 style="margin: 0">(So you don't see the scroll)</h6>-->
+			<!--<h5 style="margin: 0">(Click to hide this banner)</h5>-->
+		<!--</div>-->
         <div id="maindiv" class="center"></div>
         <div id="leveldiv" class="center"></div> 
         <p id="footer">blob bounce • <a href="https://github.com/Potatoritos/htn2020">GitHub</p>
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+		<!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>-->
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.14.2/matter.min.js"></script>
         <script src="main.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js"></script>
 		<script>
-		if(localStorage.getItem('hide')=="") localStorage.setItem('hide', 0);
-		if(parseInt(localStorage.getItem('hide'))>=2){
-			$("#infodiv").hide();
-		} else{
-			localStorage.setItem('hide', parseInt(localStorage.getItem('hide'))+1);
-		}
+//		if(localStorage.getItem('hide')=="") localStorage.setItem('hide', 0);
+//		if(parseInt(localStorage.getItem('hide'))>=2){
+//			//$("#infodiv").hide();
+//		} else{
+//			localStorage.setItem('hide', parseInt(localStorage.getItem('hide'))+1);
+//		}
 
 
-		$("#infodiv").click(
-			function(){
-				$("#infodiv").hide();
-			}
-		);
-		$(document).keypress(function(){
-						$("#infodiv").hide();
-
-		});
+		//$("#infodiv").click(
+		//	function(){
+	    //		$("#infodiv").hide();
+		//	}
+		//);
+	//	//$(document).keypress(function(){
+	//					$("#infodiv").hide();
+//
+//		});
 		
-		window.timer = false;
-		window.now = new Date().getTime();
-		
-		function formatTime(ms) {
-		  var format = "mm:ss:SS";
-		  if (ms > 3600000) {
-			format = "HH:mm:ss:SS";
-		  }
-		  return moment().startOf('day').add(ms, 'milliseconds').format(format);
-		}
-		setInterval(function(){
-			if(!window.timer){
-				document.getElementById("timer").innerHTML = formatTime(new Date().getTime()-now);
-				document.getElementById("timer2").innerHTML = formatTime(new Date().getTime()-now);
-			} else{
-				
-			}
-		}, 1);
+//		window.timer = false;
+//		window.now = new Date().getTime();
+//		
+//		function formatTime(ms) {
+//		  var format = "mm:ss:SS";
+//		  if (ms > 3600000) {
+//			format = "HH:mm:ss:SS";
+//		  }
+//		  return moment().startOf('day').add(ms, 'milliseconds').format(format);
+//		}
+//		setInterval(function(){
+//			if(!window.timer){
+//				document.getElementById("timer").innerHTML = formatTime(new Date().getTime()-now);
+//				document.getElementById("timer2").innerHTML = formatTime(new Date().getTime()-now);
+//			} else{
+//				
+//			}
+//		}, 1);
 
         </script>
     </body>
