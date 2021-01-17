@@ -722,6 +722,7 @@ class Game {
 				//this.blob.body.render.sprite.texture = "img/sadblob.png";	
 				//this.blob.isLost = true;	
                 this.displayLoss();
+				window.now = new Date().getTime();
 			}	
             if (
                 (pairs.bodyA.label === 'blob' && pairs.bodyB.label === 'win') ||
