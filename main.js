@@ -925,6 +925,11 @@ document.addEventListener('keydown', e => {
     const lvl = game.level;
     startGame(lvl);
 }, false);
+document.addEventListener('keydown', e => {
+    if (e.keyCode != 78) return;
+    const lvl = game.level;
+    startGame(lvl+1);
+}, false);
 document.addEventListener('keyup', e => {
     if (e.keyCode == CONTROLS.restart) {
         pressingRestart = false;
