@@ -502,7 +502,6 @@ class Game {
                 wireframes: false
             }
         });
-
         this.blob = new Blob(LEVELS[this.level].spawnpoint);
 
         var blocks = [];
@@ -585,10 +584,11 @@ class Game {
         blocks.push(this.blob.body);
 
         Matter.World.add(this.engine.world, blocks);
-
+		
         Matter.Engine.run(this.engine);
         Matter.Render.run(this.render);
-
+		var runner = Matter.Runner.create({fps:144});
+		Matter.Runner.run(runner, Matter.Engine);
         this.keys = {};
 
         this.keyFuncs = {
